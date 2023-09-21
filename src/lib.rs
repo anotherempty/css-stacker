@@ -51,7 +51,9 @@ where
     walker.hidden(true);
 
     if !include_path_styles {
-        walker.filter_entry(move |p| !(p.path() == path.as_ref() && p.path().is_file()));
+        walker.filter_entry(move |p| {
+            !(p.path().parent().unwrap() == path.as_ref() && p.path().is_file())
+        });
     }
 
     for result in walker.build() {
