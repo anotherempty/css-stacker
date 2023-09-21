@@ -24,10 +24,17 @@ enum ProcessError {
 /// * **output_path** - name with path of the output css file without the extension : defaults to `'./style'`
 /// * **minify** - whether to create a minified version of the output file : `false` by default
 /// * **include_path_styles** - whether to include the files that are the direct children of the provided path directory : `false` by default
+/// ### Returns
+/// **(style_path, minified_style_path)** - tuple containing the path to the output file and the path to the minified output file if `minify` is `true`
 /// ### Note
 /// * Automatically ignores files and path mentioned in the `.gitignore` file
 /// * Ignores files contained inside hidden folders
-pub fn stack_styles<P>(path: P, output_path: P, minify: bool, include_path_styles: bool)
+pub fn stack_styles<P>(
+    path: P,
+    output_path: P,
+    minify: bool,
+    include_path_styles: bool,
+) -> (String, Option<String>)
 where
     P: AsRef<Path> + Send + Sync + 'static,
 {
@@ -37,7 +44,7 @@ where
 
     let css = sass_to_css(&sass, minify).unwrap();
 
-    write_styles(output_path, &css.0, css.1).unwrap();
+    write_styles(output_path, &css.0, css.1).unwrap()
 }
 
 fn retrieve_styles<P>(path: P, include_path_styles: bool) -> Result<String, ProcessError>
@@ -145,12 +152,13 @@ fn write_styles<P>(
     output_path: P,
     styles: &str,
     styles_min: Option<String>,
-) -> Result<(), ProcessError>
+) -> Result<(String, Option<String>), ProcessError>
 where
     P: AsRef<Path>,
 {
-    let mut file = File::create(format!("{}.css", output_path.as_ref().display()))
-        .map_err(|err| ProcessError::Writing(err.to_string()))?;
+    let style_path = format!("{}.css", output_path.as_ref().display());
+    let mut file =
+        File::create(&style_path).map_err(|err| ProcessError::Writing(err.to_string()))?;
 
     file.write_all(styles.as_bytes())
         .map_err(|err| ProcessError::Writing(err.to_string()))?;
@@ -159,15 +167,18 @@ where
         .map_err(|err| ProcessError::Writing(err.to_string()))?;
 
     if let Some(styles_min) = styles_min {
-        let mut file = File::create(format!("{}.min.css", output_path.as_ref().display()))
-            .map_err(|err| ProcessError::Writing(err.to_string()))?;
+        let style_min_path = format!("{}.min.css", output_path.as_ref().display());
+        let mut file =
+            File::create(&style_min_path).map_err(|err| ProcessError::Writing(err.to_string()))?;
 
         file.write_all(styles_min.as_bytes())
             .map_err(|err| ProcessError::Writing(err.to_string()))?;
 
         file.flush()
             .map_err(|err| ProcessError::Writing(err.to_string()))?;
+
+        return Ok((style_path, Some(style_min_path)));
     }
 
-    Ok(())
+    Ok((style_path, None))
 }

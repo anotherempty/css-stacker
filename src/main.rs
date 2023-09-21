@@ -25,10 +25,16 @@ pub struct Args {
 fn main() {
     let args = Args::parse();
 
-    stack_styles(
+    let (style, style_min) = stack_styles(
         args.path,
         args.output,
         args.minify,
         args.include_path_styles,
     );
+
+    println!("Stylesheet stacked at {style}");
+
+    if let Some(style) = style_min {
+        println!("Minified stylesheet created at {style}");
+    }
 }
