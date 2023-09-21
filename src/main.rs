@@ -25,8 +25,6 @@ pub struct Args {
 fn main() {
     let args = Args::parse();
 
-    println!("{:?}", args);
-
     stack_styles(
         args.path,
         args.output,
