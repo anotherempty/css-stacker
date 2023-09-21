@@ -1,2 +1,4 @@
 /target
 .git
+/tests/test.css
+/tests/test.min.css
