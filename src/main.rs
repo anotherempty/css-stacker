@@ -13,7 +13,7 @@ pub struct Args {
     #[arg(short, long, default_value = "./style")]
     output: String,
 
-    /// Whether to include the files that are the direct children of the provided path directory
+    /// Whether to create a minified version of the output file
     #[arg(short, long, default_value = "false")]
     minify: bool,
 
