@@ -23,9 +23,10 @@ enum ProcessError {
 /// * **path** - path to the directory containing the styles : defaults to current directory
 /// * **output_path** - name with path of the output css file without the extension : defaults to `'./style'`
 /// * **minify** - whether to create a minified version of the output file : `false` by default
-/// * **include_path_styles** - whether to include the styles from the provided path directory : `false` by default
+/// * **include_path_styles** - whether to include the files that are the direct children of the provided path directory : `false` by default
 /// ### Note
 /// * Automatically ignores files and path mentioned in the `.gitignore` file
+/// * Ignores files contained inside hidden folders
 pub fn stack_styles<P>(path: P, output_path: P, minify: bool, include_path_styles: bool)
 where
     P: AsRef<Path> + Send + Sync + 'static,
