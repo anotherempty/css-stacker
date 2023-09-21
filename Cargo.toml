@@ -4,6 +4,7 @@ name = "css-stacker"
 version = "0.1.0"
 
 [dependencies]
+clap = { version = "4.4.4", features = ["derive"] }
 grass = "0.13.1"
 ignore = "0.4.20"
 lightningcss = "1.0.0-alpha.47"

@@ -2,3 +2,5 @@
 .git
 /tests/test.css
 /tests/test.min.css
+/style.css
+/style.min.css
