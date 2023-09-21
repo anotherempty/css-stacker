@@ -1,5 +1,7 @@
+@use "./style.scss";
+
 .style {
-  color: red;
+  @include style.red;
   > span {
     color: blue;
   }
