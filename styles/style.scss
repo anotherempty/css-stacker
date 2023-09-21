@@ -1,3 +1,7 @@
 .color {
   color: red;
+  padding: 1rem;
+  > span {
+    color: blue;
+  }
 }

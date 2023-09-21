@@ -1,0 +1,17 @@
+.color {
+  color: red;
+  padding: 1rem;
+}
+.color > span {
+  color: blue;
+}
+
+h1 {
+  color: red;
+  font-size: 20px;
+  background-color: blue;
+}
+
+.style {
+  color: red;
+}

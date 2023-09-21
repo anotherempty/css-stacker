@@ -1,23 +1,28 @@
-use std::{fs::OpenOptions, io::Write, path::PathBuf};
+use std::{fs::File, io::Write, path::PathBuf};
 
 use ignore::WalkBuilder;
 
-//
+// assemble all css files
+// compile sass
+// process with lightningcss
 
 fn main() {
     let css = "./style.scss";
 
     let allowed_extension = ["scss", "css"];
 
-    let mut file = OpenOptions::new()
-        .append(true)
-        .create(true) // Create the file if it doesn't exist
-        .open(css)
-        .unwrap();
+    let ignored_files = [
+        "./style.css",
+        "./style.scss",
+        "./style.min.css",
+        "./style.min.scss",
+    ];
+
+    let mut file = File::create(css).unwrap();
 
     for result in WalkBuilder::new("./")
         .hidden(false)
-        .filter_entry(move |p| p.clone().into_path() != PathBuf::from(css))
+        .filter_entry(move |p| !ignored_files.contains(&p.clone().into_path().to_str().unwrap()))
         .build()
     {
         match result {
@@ -43,4 +48,15 @@ fn main() {
             Err(err) => println!("ERROR: {}", err),
         }
     }
+
+    file.flush().unwrap();
+
+    let sass = grass::from_path(css, &grass::Options::default()).unwrap();
+
+    let file_path = PathBuf::from("./style.css");
+
+    let mut file = File::create(file_path).unwrap();
+
+    file.write_all(sass.as_bytes()).unwrap();
+    file.flush().unwrap();
 }
