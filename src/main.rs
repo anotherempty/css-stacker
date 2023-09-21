@@ -4,18 +4,6 @@ use ignore::WalkBuilder;
 use lightningcss::stylesheet::{ParserOptions, PrinterOptions, StyleSheet};
 use thiserror::Error;
 
-// assemble all css files
-// compile sass
-// process with lightningcss
-
-// options :
-// - ignore files and folders
-// - input and output file
-// - minification and prettiness
-// - browsers targets
-// - use gitignore
-// -
-
 const EXTENSIONS: [&str; 3] = ["scss", "css", "sass"];
 
 #[derive(Debug, Error)]
