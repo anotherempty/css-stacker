@@ -1,17 +1,1 @@
-.color {
-  color: red;
-  padding: 1rem;
-}
-.color > span {
-  color: blue;
-}
-
-h1 {
-  color: red;
-  font-size: 20px;
-  background-color: blue;
-}
-
-.style {
-  color: red;
-}
+.color{color:red;padding:1rem}.color>span{color:#00f}h1{color:red;background-color:#00f;font-size:20px}.style{color:red}.style>span{color:#00f}
