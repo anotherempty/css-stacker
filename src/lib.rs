@@ -84,7 +84,7 @@ where
                         path,
                         path.to_string()
                             .replace('_', "-")
-                            .replace(['/', '.', '&'], "_")
+                            .replace(['/', '.', '\\'], "_")
                             .chars()
                             .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
                             .collect::<String>()
