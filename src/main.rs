@@ -16,21 +16,12 @@ pub struct Args {
     /// Whether to create a minified version of the output file
     #[arg(short, long, default_value = "false")]
     minify: bool,
-
-    /// Whether to include the files that are the direct children of the provided path directory
-    #[arg(short, long, default_value = "false")]
-    include_path_styles: bool,
 }
 
 fn main() {
     let args = Args::parse();
 
-    let (style, style_min) = stack_styles(
-        args.path,
-        args.output,
-        args.minify,
-        args.include_path_styles,
-    );
+    let (style, style_min) = stack_styles(args.path, args.output, args.minify);
 
     println!("Stylesheet stacked at {style}");
 

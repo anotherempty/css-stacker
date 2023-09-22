@@ -26,22 +26,16 @@ enum ProcessError {
 /// * **path** - path to the directory containing the styles : defaults to current directory
 /// * **output_path** - name with path of the output css file without the extension : defaults to `'./style'`
 /// * **minify** - whether to create a minified version of the output file : `false` by default
-/// * **include_path_styles** - whether to include the files that are the direct children of the provided path directory : `false` by default
 /// ### Returns
 /// **(style_path, minified_style_path)** - tuple containing the path to the output file and the path to the minified output file if `minify` is `true`
 /// ### Note
 /// * Automatically ignores files and path mentioned in the `.gitignore` file
 /// * Ignores files contained inside hidden folders
-pub fn stack_styles<P>(
-    path: P,
-    output_path: P,
-    minify: bool,
-    include_path_styles: bool,
-) -> (String, Option<String>)
+pub fn stack_styles<P>(path: P, output_path: P, minify: bool) -> (String, Option<String>)
 where
     P: AsRef<Path> + Send + Sync + 'static,
 {
-    let styles = retrieve_styles(path, include_path_styles).unwrap();
+    let styles = retrieve_styles(path).unwrap();
 
     let sass = compile_sass(&styles).unwrap();
 
@@ -50,23 +44,13 @@ where
     write_styles(output_path, &css.0, css.1).unwrap()
 }
 
-fn retrieve_styles<P>(path: P, include_path_styles: bool) -> Result<String, ProcessError>
+fn retrieve_styles<P>(path: P) -> Result<String, ProcessError>
 where
     P: AsRef<Path> + Send + Sync + 'static,
 {
     let mut styles = String::new();
 
-    let mut walker = WalkBuilder::new(&path);
-
-    walker.hidden(true);
-
-    if !include_path_styles {
-        walker.filter_entry(move |p| {
-            !(p.path().parent().unwrap() == path.as_ref() && p.path().is_file())
-        });
-    }
-
-    for result in walker.build() {
+    for result in WalkBuilder::new(&path).hidden(true).build() {
         match result {
             Ok(entry) => {
                 if EXTENSIONS.contains(
