@@ -1,7 +1,10 @@
 use std::{fs::File, io::Write, path::Path};
 
 use ignore::WalkBuilder;
-use lightningcss::stylesheet::{ParserOptions, PrinterOptions, StyleSheet};
+use lightningcss::{
+    stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
+    targets::{Browsers, Targets},
+};
 use thiserror::Error;
 
 const EXTENSIONS: [&str; 3] = ["scss", "css", "sass"];
@@ -101,33 +104,27 @@ fn compile_sass(styles: &str) -> Result<String, ProcessError> {
 }
 
 fn sass_to_css(styles: &str, minify: bool) -> Result<(String, Option<String>), ProcessError> {
-    let stylesheet = StyleSheet::parse(styles, ParserOptions::default())
+    let mut stylesheet = StyleSheet::parse(styles, ParserOptions::default())
         .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
-    // * doesn't seem to do any structural modification : minification, vendor prefixes, etc
-    // stylesheet
-    //     .minify(MinifyOptions {
-    //         targets: Targets {
-    //             browsers: Some(Browsers {
-    //                 chrome: Some(50),
-    //                 edge: Some(12),
-    //                 ie: Some(10),
-    //                 safari: Some(12),
-    //                 opera: Some(40),
-    //                 firefox: Some(50),
-    //                 ..Default::default()
-    //             }),
-    //             ..Default::default()
-    //         },
-    //         ..Default::default()
-    //     })
-    //     .unwrap();
+    let targets = Targets {
+        browsers: Browsers::from_browserslist([
+            ">0.3%, defaults, supports es6-module, maintained node versions",
+        ])
+        .map_err(|err| ProcessError::Stylesheet(err.to_string()))?,
+        ..Default::default()
+    };
 
-    let css = stylesheet
-        .to_css(PrinterOptions {
-            minify: false,
+    // * note: doesn't remove spaces but does minify structuraly according to the options provided
+    stylesheet
+        .minify(MinifyOptions {
+            targets,
             ..Default::default()
         })
+        .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
+
+    let css = stylesheet
+        .to_css(PrinterOptions::default())
         .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
     let styles = css.code;
@@ -137,7 +134,7 @@ fn sass_to_css(styles: &str, minify: bool) -> Result<(String, Option<String>), P
     if minify {
         let css_min = stylesheet
             .to_css(PrinterOptions {
-                minify: true,
+                minify: true, // removes spaces
                 ..Default::default()
             })
             .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
