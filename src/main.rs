@@ -1,5 +1,5 @@
 use clap::Parser;
-use css_stacker::stack_styles;
+use css_stacker::{stack_styles, Format};
 
 /// Simple program to stack css|scss|sass files into a single file
 #[derive(Parser, Debug)]
@@ -13,19 +13,21 @@ pub struct Args {
     #[arg(short, long, default_value = "./style")]
     output: String,
 
-    /// Whether to create a minified version of the output file
-    #[arg(short, long, default_value = "false")]
-    minify: bool,
+    /// Format of the output file
+    #[arg(short, long, value_enum, default_value = "both")]
+    format: Format,
 }
 
 fn main() {
     let args = Args::parse();
 
-    let (style, style_min) = stack_styles(args.path, args.output, args.minify);
+    let (style, style_min) = stack_styles(args.path, args.output, args.format);
 
-    println!("Stylesheet stacked at {style}");
+    if !style.is_empty() {
+        println!("Stylesheet created at {style}");
+    }
 
-    if let Some(style) = style_min {
+    if !style_min.is_empty() {
         println!("Minified stylesheet created at {style}");
     }
 }

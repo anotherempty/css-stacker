@@ -1,5 +1,6 @@
 use std::{fs::File, io::Write, path::Path};
 
+use clap::ValueEnum;
 use ignore::WalkBuilder;
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
@@ -8,6 +9,13 @@ use lightningcss::{
 use thiserror::Error;
 
 const EXTENSIONS: [&str; 3] = ["scss", "css", "sass"];
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Format {
+    Minified,
+    Pretty,
+    Both,
+}
 
 #[derive(Debug, Error)]
 enum ProcessError {
@@ -25,13 +33,13 @@ enum ProcessError {
 /// ### Arguments
 /// * **path** - path to the directory containing the styles : defaults to current directory
 /// * **output_path** - name with path of the output css file without the extension : defaults to `'./style'`
-/// * **minify** - whether to create a minified version of the output file : `false` by default
+/// * **format** - format of the output file : defaults to `Format::Both`
 /// ### Returns
-/// **(style_path, minified_style_path)** - tuple containing the path to the output file and the path to the minified output file if `minify` is `true`
+/// **(style_path, minified_style_path)** - tuple containing the path to the output file and the path to the minified output file
 /// ### Note
 /// * Automatically ignores files and path mentioned in the `.gitignore` file
 /// * Ignores files contained inside hidden folders
-pub fn stack_styles<P>(path: P, output_path: P, minify: bool) -> (String, Option<String>)
+pub fn stack_styles<P>(path: P, output_path: P, format: Format) -> (String, String)
 where
     P: AsRef<Path> + Send + Sync + 'static,
 {
@@ -39,9 +47,9 @@ where
 
     let sass = compile_sass(&styles).unwrap();
 
-    let css = sass_to_css(&sass, minify).unwrap();
+    let css = sass_to_css(&sass, format).unwrap();
 
-    write_styles(output_path, &css.0, css.1).unwrap()
+    write_styles(output_path, css.0, css.1).unwrap()
 }
 
 fn retrieve_styles<P>(path: P) -> Result<String, ProcessError>
@@ -87,7 +95,10 @@ fn compile_sass(styles: &str) -> Result<String, ProcessError> {
         .map_err(|err| ProcessError::Sass(err.to_string()))
 }
 
-fn sass_to_css(styles: &str, minify: bool) -> Result<(String, Option<String>), ProcessError> {
+fn sass_to_css(
+    styles: &str,
+    format: Format,
+) -> Result<(Option<String>, Option<String>), ProcessError> {
     let mut stylesheet = StyleSheet::parse(styles, ParserOptions::default())
         .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
@@ -107,48 +118,65 @@ fn sass_to_css(styles: &str, minify: bool) -> Result<(String, Option<String>), P
         })
         .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
-    let css = stylesheet
-        .to_css(PrinterOptions::default())
-        .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
+    match format {
+        Format::Minified => {
+            let css_min = stylesheet
+                .to_css(PrinterOptions {
+                    minify: true, // removes spaces
+                    ..Default::default()
+                })
+                .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
-    let styles = css.code;
+            Ok((None, Some(css_min.code)))
+        }
+        Format::Pretty => {
+            let css = stylesheet
+                .to_css(PrinterOptions::default())
+                .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
-    let mut styles_min = None;
+            Ok((Some(css.code), None))
+        }
+        Format::Both => {
+            let css_min = stylesheet
+                .to_css(PrinterOptions {
+                    minify: true, // removes spaces
+                    ..Default::default()
+                })
+                .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
-    if minify {
-        let css_min = stylesheet
-            .to_css(PrinterOptions {
-                minify: true, // removes spaces
-                ..Default::default()
-            })
-            .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
+            let css = stylesheet
+                .to_css(PrinterOptions::default())
+                .map_err(|err| ProcessError::Stylesheet(err.to_string()))?;
 
-        styles_min = Some(css_min.code);
+            Ok((Some(css.code), Some(css_min.code)))
+        }
     }
-
-    Ok((styles, styles_min))
 }
 
 fn write_styles<P>(
     output_path: P,
-    styles: &str,
+    styles: Option<String>,
     styles_min: Option<String>,
-) -> Result<(String, Option<String>), ProcessError>
+) -> Result<(String, String), ProcessError>
 where
     P: AsRef<Path>,
 {
-    let style_path = format!("{}.css", output_path.as_ref().display());
-    let mut file =
-        File::create(&style_path).map_err(|err| ProcessError::Writing(err.to_string()))?;
+    let mut style_path = "".to_string();
+    if let Some(styles) = styles {
+        style_path = format!("{}.css", output_path.as_ref().display());
+        let mut file =
+            File::create(&style_path).map_err(|err| ProcessError::Writing(err.to_string()))?;
 
-    file.write_all(styles.as_bytes())
-        .map_err(|err| ProcessError::Writing(err.to_string()))?;
+        file.write_all(styles.as_bytes())
+            .map_err(|err| ProcessError::Writing(err.to_string()))?;
 
-    file.flush()
-        .map_err(|err| ProcessError::Writing(err.to_string()))?;
+        file.flush()
+            .map_err(|err| ProcessError::Writing(err.to_string()))?;
+    }
 
+    let mut style_min_path = "".to_string();
     if let Some(styles_min) = styles_min {
-        let style_min_path = format!("{}.min.css", output_path.as_ref().display());
+        style_min_path = format!("{}.min.css", output_path.as_ref().display());
         let mut file =
             File::create(&style_min_path).map_err(|err| ProcessError::Writing(err.to_string()))?;
 
@@ -157,9 +185,7 @@ where
 
         file.flush()
             .map_err(|err| ProcessError::Writing(err.to_string()))?;
-
-        return Ok((style_path, Some(style_min_path)));
     }
 
-    Ok((style_path, None))
+    Ok((style_path, style_min_path))
 }
