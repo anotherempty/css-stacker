@@ -28,6 +28,6 @@ fn main() {
     }
 
     if !style_min.is_empty() {
-        println!("Minified stylesheet created at {style}");
+        println!("Minified stylesheet created at {style_min}");
     }
 }
