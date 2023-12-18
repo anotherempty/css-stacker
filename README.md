@@ -21,5 +21,5 @@ cargo install --locked --git https://github.com/anotherempty/css-stacker
 ## Example
 
 ```bash
-css-stacker -p ./src/styles -o ./dist/style -m
+css-stacker -p ./src/styles -o ./dist/style -f minified
 ```
