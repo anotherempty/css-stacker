@@ -69,6 +69,7 @@
 
         <Package Id='*'
             Keywords='Installer'
+            Description='Stack all css/scss/sass files into one css file'
             Manufacturer='anotherempty'
             InstallerVersion='450'
             Languages='1033'
