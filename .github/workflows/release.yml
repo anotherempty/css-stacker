@@ -255,7 +255,7 @@ jobs:
             git add Formula/${name}.rb
             git commit -m "${name} ${version}"
           done
-          git push origin HEAD:main
+          git push
 
   # Create a Github Release while uploading all files to it
   announce:
