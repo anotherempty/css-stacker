@@ -1,10 +1,17 @@
 [package]
 authors = ["anotherempty"]
+description = "Stack all css/scss/sass files into one css file"
 edition = "2021"
 license = "MIT"
 name = "css-stacker"
 repository = "https://github.com/anotherempty/css-stacker"
 version = "0.1.0"
+
+[package.metadata.wix]
+eula = false
+license = false
+path-guid = "AB69D5B7-439E-4837-AC12-E050048C7EDF"
+upgrade-guid = "C2FE2386-2942-43EE-BADC-D6CE001FAB28"
 
 [dependencies]
 clap = { version = "4.4.4", features = ["derive"] }
@@ -12,3 +19,30 @@ grass = "0.13.1"
 ignore = "0.4.20"
 lightningcss = { version = "1.0.0-alpha.51", features = ["browserslist"] }
 thiserror = "1.0.48"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.5.0"
+# CI backends to support
+ci = ["github"]
+# The installers to generate for each app
+installers = ["shell", "homebrew", "msi"]
+# A GitHub repo to push Homebrew formulas to
+tap = "anotherempty/css-stacker"
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+]
+# Publish jobs to run in CI
+publish-jobs = ["homebrew"]
+# Publish jobs to run in CI
+pr-run-mode = "plan"
