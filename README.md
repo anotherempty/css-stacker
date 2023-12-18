@@ -23,3 +23,5 @@ cargo install --locked --git https://github.com/anotherempty/css-stacker
 ```bash
 css-stacker -p ./src/styles -o ./dist/style -f minified
 ```
+
+ Will output `.dist/style.min.css`
