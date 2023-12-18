@@ -32,7 +32,8 @@ enum ProcessError {
 /// stack css/sass/scss files into a single css file
 /// ### Arguments
 /// * **path** - path to the directory containing the styles : defaults to current directory
-/// * **output_path** - name with path of the output css file without the extension : defaults to `'./style'`
+/// * **output_path** - name with path of the output css file without the extension : defaults to `'./style'` (which outputs '
+/// *./style.css*')
 /// * **format** - format of the output file : defaults to `Format::Both`
 /// ### Returns
 /// **(style_path, minified_style_path)** - tuple containing the path to the output file and the path to the minified output file
