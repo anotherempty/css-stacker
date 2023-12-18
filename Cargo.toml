@@ -32,7 +32,7 @@ cargo-dist-version = "0.5.0"
 # CI backends to support
 ci = ["github"]
 # The installers to generate for each app
-installers = ["shell", "homebrew", "msi"]
+installers = ["shell"]
 # A GitHub repo to push Homebrew formulas to
 tap = "anotherempty/css-stacker"
 # Target platforms to build apps for (Rust target-triple syntax)
