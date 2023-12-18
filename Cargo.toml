@@ -1,4 +1,5 @@
 [package]
+authors = ["anotherempty"]
 edition = "2021"
 license = "MIT"
 name = "css-stacker"
