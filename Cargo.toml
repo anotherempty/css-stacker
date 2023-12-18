@@ -2,6 +2,7 @@
 edition = "2021"
 name = "css-stacker"
 version = "0.1.0"
+license = "MIT"
 
 [dependencies]
 clap = { version = "4.4.4", features = ["derive"] }
