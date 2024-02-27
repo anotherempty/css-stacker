@@ -14,7 +14,7 @@ pub struct Args {
     output: String,
 
     /// Format of the output file
-    #[arg(short, long, value_enum, default_value = "both")]
+    #[arg(short, long, value_enum)]
     format: Option<Format>,
 }
 
