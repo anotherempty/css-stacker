@@ -1,5 +1,7 @@
 mod types;
-pub use types::{Format, Result};
+
+pub use types::{Format, Result, StyleExtension};
+pub struct Stacker;
 
 use std::{
     fs::{self, File},
@@ -14,23 +16,26 @@ use lightningcss::{
     targets::{Browsers, Targets},
 };
 
-use crate::types::{StackerError, StyleExtension};
-
-pub struct Stacker;
+use crate::types::StackerError;
 
 impl Stacker {
-    pub fn create<P>(path: P, output_path: P, format: Option<Format>) -> Result<(String, String)>
+    pub fn create<P>(
+        path: P,
+        output_path: P,
+        format: Option<Format>,
+        allowed_extensions: &[StyleExtension],
+    ) -> Result<(String, String)>
     where
         P: AsRef<Path> + Send + Sync + 'static,
     {
-        let styles = Self::collect(path)?;
+        let styles = Self::collect(path, allowed_extensions)?;
         let sass = Self::process_sass(styles)?;
         let (styles, styles_min) = Self::sass_to_css(sass, format)?;
 
         Self::save(output_path, styles, styles_min)
     }
 
-    fn collect<P>(path: P) -> Result<String>
+    fn collect<P>(path: P, allowed_extensions: &[StyleExtension]) -> Result<String>
     where
         P: AsRef<Path> + Send + Sync + 'static,
     {
@@ -40,6 +45,14 @@ impl Stacker {
             let Ok(entry) = result else {
                 continue;
             };
+
+            if let Some(ext) = StyleExtension::from_os_str(entry.path().extension()) {
+                if !allowed_extensions.is_empty() && !allowed_extensions.contains(&ext) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
 
             if StyleExtension::from_os_str(entry.path().extension()).is_none() {
                 continue;
