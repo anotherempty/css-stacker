@@ -5,30 +5,38 @@ use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, StackerError>;
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum Format {
     Minified,
     Pretty,
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum, Eq, PartialEq)]
 pub enum StyleExtension {
     Css,
     Scss,
     Sass,
 }
 
+impl TryFrom<&OsStr> for StyleExtension {
+    type Error = StackerError;
+
+    fn try_from(value: &OsStr) -> std::result::Result<Self, Self::Error> {
+        match value.to_str() {
+            Some(s) => match s.to_lowercase().as_str() {
+                "css" => Ok(Self::Css),
+                "scss" => Ok(Self::Scss),
+                "sass" => Ok(Self::Sass),
+                _ => Err(StackerError::Stylesheet("Invalid extension".to_string())),
+            },
+            None => Err(StackerError::Stylesheet("Invalid extension".to_string())),
+        }
+    }
+}
+
 impl StyleExtension {
     pub fn from_os_str(os_str: Option<&OsStr>) -> Option<Self> {
-        os_str.and_then(|os_str| {
-            os_str
-                .to_str()
-                .and_then(|s| match s.to_lowercase().as_str() {
-                    "css" => Some(Self::Css),
-                    "scss" => Some(Self::Scss),
-                    "sass" => Some(Self::Sass),
-                    _ => None,
-                })
-        })
+        os_str.and_then(|os_str| Self::try_from(os_str).ok())
     }
 }
 

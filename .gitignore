@@ -2,6 +2,7 @@
 .git
 /tests/test.css
 /tests/test.min.css
+/tests/test_filtered.min.css
 /style.css
 /style.min.css
 .DS_Store
