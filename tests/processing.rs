@@ -10,6 +10,7 @@ fn test_stacking() {
         output_dir: Some("./tests".into()),
         output_name: Some("test".into()),
         output_format: None,
+        verbose: false,
     };
     let _ = Stacker::create(options);
 
@@ -31,6 +32,7 @@ fn test_stacking_with_filter() {
         output_dir: Some("./tests".into()),
         output_name: Some("test_filtered".into()),
         output_format: Some(Format::Minified),
+        verbose: false,
     };
 
     let _ = Stacker::create(options);

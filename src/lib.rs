@@ -1,14 +1,12 @@
 mod types;
 
 use clap::Parser;
-pub use types::{Format, Result, StyleExtension};
-pub struct Stacker;
-
 use std::{
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
 };
+pub use types::{Format, Result, StyleExtension};
 
 use ignore::WalkBuilder;
 use lightningcss::{
@@ -16,6 +14,8 @@ use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, StyleSheet},
     targets::{Browsers, Targets},
 };
+#[cfg(feature = "tracing")]
+use tracing::debug as println;
 
 use crate::types::StackerError;
 
@@ -52,7 +52,13 @@ pub struct StackerOptions {
     /// Format of the output file. When not provided, both minified and pretty formats are generated.
     #[arg(short = 'f', long, value_enum)]
     pub output_format: Option<Format>,
+
+    /// Show verbose output.
+    #[arg(short, long)]
+    pub verbose: bool,
 }
+
+pub struct Stacker;
 
 impl Stacker {
     /// Returns the path to the generated styles and minified styles.
@@ -66,18 +72,24 @@ impl Stacker {
             .as_deref()
             .unwrap_or_else(|| Path::new("."));
 
-        let styles = Self::collect(options.path, &options.extensions)?;
-        let sass = Self::process_sass(styles)?;
-        let (styles, styles_min) = Self::sass_to_css(sass, options.output_format)?;
+        let verbose = options.verbose || cfg!(feature = "tracing");
 
-        Self::save(output_directory, filename, styles, styles_min)
+        let styles = Self::collect(options.path, &options.extensions, verbose)?;
+        let sass = Self::process_sass(styles, verbose)?;
+        let (styles, styles_min) = Self::sass_to_css(sass, options.output_format, verbose)?;
+
+        Self::save(output_directory, filename, styles, styles_min, verbose)
     }
 
-    fn collect<P>(path: P, allowed_extensions: &[StyleExtension]) -> Result<String>
+    fn collect<P>(path: P, allowed_extensions: &[StyleExtension], verbose: bool) -> Result<String>
     where
         P: AsRef<Path> + Send + Sync + 'static,
     {
         let mut styles = String::new();
+
+        if verbose {
+            println!("Collecting styles from: {}", path.as_ref().display());
+        }
 
         for result in WalkBuilder::new(&path).hidden(true).build() {
             let Ok(entry) = result else {
@@ -98,6 +110,10 @@ impl Stacker {
 
             let path = entry.path().display();
 
+            if verbose {
+                println!("Adding file: {}", path);
+            }
+
             styles.push_str(&format!(
                 "@use '{}' as {};\n",
                 path,
@@ -117,7 +133,11 @@ impl Stacker {
         Ok(styles)
     }
 
-    fn process_sass(raw_styles: String) -> Result<String> {
+    fn process_sass(raw_styles: String, verbose: bool) -> Result<String> {
+        if verbose {
+            println!("Processing SASS");
+        }
+
         grass::from_string(raw_styles, &grass::Options::default())
             .map_err(|err| StackerError::Sass(err.to_string()))
     }
@@ -125,7 +145,12 @@ impl Stacker {
     fn sass_to_css(
         sass: String,
         format: Option<Format>,
+        verbose: bool,
     ) -> Result<(Option<String>, Option<String>)> {
+        if verbose {
+            println!("Converting SASS to CSS");
+        }
+
         let mut stylesheet = StyleSheet::parse(&sass, ParserOptions::default())
             .map_err(|err| StackerError::Stylesheet(err.to_string()))?;
 
@@ -147,6 +172,10 @@ impl Stacker {
 
         match format {
             Some(Format::Minified) => {
+                if verbose {
+                    println!("Generating minified CSS");
+                }
+
                 let css_min = stylesheet
                     .to_css(PrinterOptions {
                         minify: true, // removes spaces
@@ -157,6 +186,10 @@ impl Stacker {
                 Ok((None, Some(css_min.code)))
             }
             Some(Format::Pretty) => {
+                if verbose {
+                    println!("Generating pretty CSS");
+                }
+
                 let css = stylesheet
                     .to_css(PrinterOptions::default())
                     .map_err(|err| StackerError::Stylesheet(err.to_string()))?;
@@ -164,12 +197,20 @@ impl Stacker {
                 Ok((Some(css.code), None))
             }
             None => {
+                if verbose {
+                    println!("Generating minified CSS");
+                }
+
                 let css_min = stylesheet
                     .to_css(PrinterOptions {
                         minify: true, // removes spaces
                         ..Default::default()
                     })
                     .map_err(|err| StackerError::Stylesheet(err.to_string()))?;
+
+                if verbose {
+                    println!("Generating pretty CSS");
+                }
 
                 let css = stylesheet
                     .to_css(PrinterOptions::default())
@@ -185,10 +226,15 @@ impl Stacker {
         filename: String,
         styles: Option<String>,
         styles_min: Option<String>,
+        verbose: bool,
     ) -> Result<StackerOutput>
     where
         P: AsRef<Path>,
     {
+        if verbose {
+            println!("Making sure output directory exists");
+        }
+
         fs::create_dir_all(&output_dir).map_err(|err| StackerError::Save(err.to_string()))?;
 
         let output_path = output_dir.as_ref().join(filename);
@@ -198,6 +244,10 @@ impl Stacker {
             let path = output_path.with_extension("css");
             let mut file =
                 File::create(&path).map_err(|err| StackerError::Save(err.to_string()))?;
+
+            if verbose {
+                println!("Saving styles to: {}", path.display());
+            }
 
             style_path = Some(path);
 
@@ -213,6 +263,10 @@ impl Stacker {
             let path = output_path.with_extension("min.css");
             let mut file =
                 File::create(&path).map_err(|err| StackerError::Save(err.to_string()))?;
+
+            if verbose {
+                println!("Saving minified styles to: {}", path.display());
+            }
 
             style_min_path = Some(path);
 
