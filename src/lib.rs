@@ -61,17 +61,16 @@ impl Stacker {
             .output_name
             .unwrap_or(DEFAULT_OUTPUT_NAME.to_string());
 
-        let output_path = options
+        let output_directory = options
             .output_dir
             .as_deref()
-            .unwrap_or_else(|| Path::new("."))
-            .join(filename);
+            .unwrap_or_else(|| Path::new("."));
 
         let styles = Self::collect(options.path, &options.extensions)?;
         let sass = Self::process_sass(styles)?;
         let (styles, styles_min) = Self::sass_to_css(sass, options.output_format)?;
 
-        Self::save(output_path, styles, styles_min)
+        Self::save(output_directory, filename, styles, styles_min)
     }
 
     fn collect<P>(path: P, allowed_extensions: &[StyleExtension]) -> Result<String>
@@ -182,18 +181,21 @@ impl Stacker {
     }
 
     fn save<P>(
-        output_path: P,
+        output_dir: P,
+        filename: String,
         styles: Option<String>,
         styles_min: Option<String>,
     ) -> Result<StackerOutput>
     where
         P: AsRef<Path>,
     {
-        fs::create_dir_all(&output_path).map_err(|err| StackerError::Save(err.to_string()))?;
+        fs::create_dir_all(&output_dir).map_err(|err| StackerError::Save(err.to_string()))?;
+
+        let output_path = output_dir.as_ref().join(filename);
 
         let mut style_path = None;
         if let Some(styles) = styles {
-            let path = output_path.as_ref().with_extension("css");
+            let path = output_path.with_extension("css");
             let mut file =
                 File::create(&path).map_err(|err| StackerError::Save(err.to_string()))?;
 
@@ -208,7 +210,7 @@ impl Stacker {
 
         let mut style_min_path = None;
         if let Some(styles_min) = styles_min {
-            let path = output_path.as_ref().with_extension("min.css");
+            let path = output_path.with_extension("min.css");
             let mut file =
                 File::create(&path).map_err(|err| StackerError::Save(err.to_string()))?;
 
