@@ -1,5 +1,6 @@
 mod types;
 
+use clap::Parser;
 pub use types::{Format, Result, StyleExtension};
 pub struct Stacker;
 
@@ -18,19 +19,50 @@ use lightningcss::{
 
 use crate::types::StackerError;
 
+const DEFAULT_OUTPUT_NAME: &str = "styles";
+
+/// Simple program to stack css|scss|sass files into a single file
+#[derive(Parser, Debug)]
+#[command(version)]
+pub struct StackerOptions {
+    /// Path to the directory containing the styles.
+    #[arg(short, long, default_value = "./")]
+    pub path: PathBuf,
+
+    /// Allowed file extensions that will be added to the stacked file.
+    #[arg(short, long, value_enum)]
+    pub extensions: Vec<StyleExtension>,
+
+    /// Path of the output directory.
+    /// Defaults to the current directory.
+    #[arg(short = 'd', long)]
+    pub output_dir: Option<PathBuf>,
+
+    /// Name of the output file.
+    /// Defaults to 'styles'.
+    #[arg(short = 'n', long)]
+    pub output_name: Option<String>,
+
+    /// Format of the output file.
+    #[arg(short = 'f', long, value_enum)]
+    pub output_format: Option<Format>,
+}
+
 impl Stacker {
-    pub fn create<P>(
-        path: P,
-        output_path: P,
-        format: Option<Format>,
-        allowed_extensions: &[StyleExtension],
-    ) -> Result<(String, String)>
-    where
-        P: AsRef<Path> + Send + Sync + 'static,
-    {
-        let styles = Self::collect(path, allowed_extensions)?;
+    pub fn create(options: StackerOptions) -> Result<(String, String)> {
+        let filename = options
+            .output_name
+            .unwrap_or(DEFAULT_OUTPUT_NAME.to_string());
+
+        let output_path = options
+            .output_dir
+            .as_deref()
+            .unwrap_or_else(|| Path::new("."))
+            .join(filename);
+
+        let styles = Self::collect(options.output_dir.unwrap_or_default(), &options.extensions)?;
         let sass = Self::process_sass(styles)?;
-        let (styles, styles_min) = Self::sass_to_css(sass, format)?;
+        let (styles, styles_min) = Self::sass_to_css(sass, options.output_format)?;
 
         Self::save(output_path, styles, styles_min)
     }
