@@ -67,7 +67,7 @@ impl Stacker {
             .unwrap_or_else(|| Path::new("."))
             .join(filename);
 
-        let styles = Self::collect(options.output_dir.unwrap_or_default(), &options.extensions)?;
+        let styles = Self::collect(options.path, &options.extensions)?;
         let sass = Self::process_sass(styles)?;
         let (styles, styles_min) = Self::sass_to_css(sass, options.output_format)?;
 
