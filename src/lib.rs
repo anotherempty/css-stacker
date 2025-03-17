@@ -188,12 +188,7 @@ impl Stacker {
     where
         P: AsRef<Path>,
     {
-        let path = PathBuf::from(output_path.as_ref());
-        let dir = path.parent().ok_or_else(|| {
-            StackerError::Save("Failed to get the parent directory of the output path".to_string())
-        })?;
-
-        fs::create_dir_all(dir).map_err(|err| StackerError::Save(err.to_string()))?;
+        fs::create_dir_all(&output_path).map_err(|err| StackerError::Save(err.to_string()))?;
 
         let mut style_path = None;
         if let Some(styles) = styles {
