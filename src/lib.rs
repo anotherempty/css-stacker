@@ -34,7 +34,8 @@ pub struct StackerOptions {
     #[arg(short, long, default_value = "./")]
     pub path: PathBuf,
 
-    /// Allowed file extensions that will be added to the stacked file.
+    /// Restrict file extensions to be processed.
+    /// When not provided, all css, scss and sass files are processed.
     #[arg(short, long, value_enum)]
     pub extensions: Vec<StyleExtension>,
 
