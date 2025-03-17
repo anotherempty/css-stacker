@@ -21,6 +21,11 @@ use crate::types::StackerError;
 
 const DEFAULT_OUTPUT_NAME: &str = "styles";
 
+pub struct StackerOutput {
+    pub pretty: Option<PathBuf>,
+    pub minified: Option<PathBuf>,
+}
+
 /// Simple program to stack css|scss|sass files into a single file
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -43,13 +48,14 @@ pub struct StackerOptions {
     #[arg(short = 'n', long)]
     pub output_name: Option<String>,
 
-    /// Format of the output file.
+    /// Format of the output file. When not provided, both minified and pretty formats are generated.
     #[arg(short = 'f', long, value_enum)]
     pub output_format: Option<Format>,
 }
 
 impl Stacker {
-    pub fn create(options: StackerOptions) -> Result<(String, String)> {
+    /// Returns the path to the generated styles and minified styles.
+    pub fn create(options: StackerOptions) -> Result<StackerOutput> {
         let filename = options
             .output_name
             .unwrap_or(DEFAULT_OUTPUT_NAME.to_string());
@@ -178,7 +184,7 @@ impl Stacker {
         output_path: P,
         styles: Option<String>,
         styles_min: Option<String>,
-    ) -> Result<(String, String)>
+    ) -> Result<StackerOutput>
     where
         P: AsRef<Path>,
     {
@@ -189,11 +195,13 @@ impl Stacker {
 
         fs::create_dir_all(dir).map_err(|err| StackerError::Save(err.to_string()))?;
 
-        let mut style_path = "".to_string();
+        let mut style_path = None;
         if let Some(styles) = styles {
-            style_path = format!("{}.css", output_path.as_ref().display());
+            let path = output_path.as_ref().with_extension("css");
             let mut file =
-                File::create(&style_path).map_err(|err| StackerError::Save(err.to_string()))?;
+                File::create(&path).map_err(|err| StackerError::Save(err.to_string()))?;
+
+            style_path = Some(path);
 
             file.write_all(styles.as_bytes())
                 .map_err(|err| StackerError::Save(err.to_string()))?;
@@ -202,11 +210,13 @@ impl Stacker {
                 .map_err(|err| StackerError::Save(err.to_string()))?;
         }
 
-        let mut style_min_path = "".to_string();
+        let mut style_min_path = None;
         if let Some(styles_min) = styles_min {
-            style_min_path = format!("{}.min.css", output_path.as_ref().display());
+            let path = output_path.as_ref().with_extension("min.css");
             let mut file =
-                File::create(&style_min_path).map_err(|err| StackerError::Save(err.to_string()))?;
+                File::create(&path).map_err(|err| StackerError::Save(err.to_string()))?;
+
+            style_min_path = Some(path);
 
             file.write_all(styles_min.as_bytes())
                 .map_err(|err| StackerError::Save(err.to_string()))?;
@@ -215,6 +225,9 @@ impl Stacker {
                 .map_err(|err| StackerError::Save(err.to_string()))?;
         }
 
-        Ok((style_path, style_min_path))
+        Ok(StackerOutput {
+            pretty: style_path,
+            minified: style_min_path,
+        })
     }
 }

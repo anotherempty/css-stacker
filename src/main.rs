@@ -4,14 +4,14 @@ use css_stacker::{Result, Stacker, StackerOptions};
 fn main() -> Result<()> {
     let options = StackerOptions::parse();
 
-    let (style, style_min) = Stacker::create(options)?;
+    let output = Stacker::create(options)?;
 
-    if !style.is_empty() {
-        println!("Stylesheet created at {style}");
+    if let Some(style) = output.pretty {
+        println!("Stylesheet created at {}", style.display());
     }
 
-    if !style_min.is_empty() {
-        println!("Minified stylesheet created at {style_min}");
+    if let Some(style_min) = output.minified {
+        println!("Minified stylesheet created at {}", style_min.display());
     }
 
     Ok(())
