@@ -21,6 +21,26 @@ use crate::types::StackerError;
 
 const DEFAULT_OUTPUT_NAME: &str = "styles";
 
+trait PathExt {
+    fn unix_display(&self) -> String;
+    fn flat_display(&self) -> String;
+}
+
+impl PathExt for Path {
+    fn unix_display(&self) -> String {
+        self.display().to_string().replace('\\', "/")
+    }
+
+    fn flat_display(&self) -> String {
+        self.unix_display()
+            .replace('_', "-")
+            .replace(['/', '.', '\\'], "_")
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+            .collect::<String>()
+    }
+}
+
 pub struct StackerOutput {
     pub pretty: Option<PathBuf>,
     pub minified: Option<PathBuf>,
@@ -108,22 +128,15 @@ impl Stacker {
                 continue;
             }
 
-            let path = entry.path().display();
+            let path = entry.path();
+            let path_unix = path.unix_display();
+            let path_flat_display = path.flat_display();
 
             if verbose {
-                println!("Adding file: {}", path);
+                println!("Adding file: {}", path.display());
             }
 
-            styles.push_str(&format!(
-                "@use '{}' as {};\n",
-                path,
-                path.to_string()
-                    .replace('_', "-")
-                    .replace(['/', '.', '\\'], "_")
-                    .chars()
-                    .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
-                    .collect::<String>()
-            ));
+            styles.push_str(&format!("@use '{path_unix}' as {path_flat_display};\n"));
         }
 
         if styles.is_empty() {
